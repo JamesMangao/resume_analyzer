@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>AI Resume Analyzer & Job Matcher</title>
     
     <!-- Bootstrap 5 CDN -->
@@ -47,15 +48,27 @@
                             {{ session('success') }}
                         </div>
                     @endif
+                @if(session('success'))
+                    <div class="alert alert-success mt-3">
+                        {{ session('success') }}
+                    </div>
+                @endif
+
+                @if(session('resume'))
+                    <div class="card mt-4">
+                        <div class="card-header bg-dark text-white">
+                            Uploaded Resume Preview
+                        </div>
+                        <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                            {!! session('resume')->resume_content !!}
+                        </div>
+                    </div>
+                @endif
 
                     <div class="card ats-style-card">
                         <div class="card-body p-4 p-md-5">
-                            <form id="analysisForm" 
-                                action="{{ route('analyze.resume') }}" 
-                                method="POST" 
-                                enctype="multipart/form-data">
-                                @csrf
-
+                            <form id="analysisForm" enctype="multipart/form-data">
+                                     @csrf
                                 <!-- Resume Upload -->
                                 <div class="mb-4">
                                     <label for="resumeFile" class="form-label fs-5">Upload Your Resume</label>
@@ -78,6 +91,14 @@
                                 </div>
                             </form>
                         </div>
+                                            <!-- AJAX result container -->
+                    <div id="resultBox" class="card mt-4" style="display:none; max-height:400px; overflow-y:auto;">
+                        <div class="card-header bg-dark text-white">
+                            Uploaded Resume Preview
+                        </div>
+                        <div class="card-body" id="resumeContent"></div>
+                    </div>
+
                     </div>
                 </main>
 
@@ -88,25 +109,24 @@
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
+  <script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('analysisForm');
     const resumeInput = document.getElementById('resumeFile');
     const jobDescriptionInput = document.getElementById('jobDescription');
     const submitButton = document.getElementById('submitButton');
     const buttonText = document.getElementById('buttonText');
     const loadingSpinner = document.getElementById('loadingSpinner');
+    const resultBox = document.getElementById('resultBox');
+    const resumeContentDiv = document.getElementById('resumeContent');
 
     let resumeFileValid = false;
-
-    // Allowed file types
     const allowedExtensions = ['pdf', 'doc', 'docx', 'txt'];
 
-    // Enable/disable submit button based on validation
     function validateForm() {
         submitButton.disabled = !resumeFileValid || jobDescriptionInput.value.trim() === '';
     }
 
-    // File validation
     resumeInput.addEventListener('change', function () {
         const file = resumeInput.files[0];
         if (!file) {
@@ -117,26 +137,57 @@
 
         const ext = file.name.split('.').pop().toLowerCase();
         if (!allowedExtensions.includes(ext)) {
-            alert('Invalid file type. Please upload PDF, DOC, DOCX, or TXT.');
+            alert('Invalid file type.');
             resumeInput.value = '';
             resumeFileValid = false;
         } else {
             resumeFileValid = true;
         }
-
         validateForm();
     });
 
-    // Job description input listener
     jobDescriptionInput.addEventListener('input', validateForm);
 
-    // Show loading spinner on submit
-    document.getElementById('analysisForm').addEventListener('submit', function () {
-        submitButton.disabled = true;
-        buttonText.textContent = 'Analyzing...';
-        loadingSpinner.style.display = 'inline-block';
+    form.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    submitButton.disabled = true;
+    buttonText.textContent = 'Analyzing...';
+    loadingSpinner.style.display = 'inline-block';
+
+    const formData = new FormData(form);
+    formData.append('_token', document.querySelector('meta[name="csrf-token"]').content); // 👈 must have CSRF
+
+    fetch('{{ route("analyze.resume.ajax") }}', {
+        method: 'POST',
+        body: formData // ✅ don't set Content-Type manually
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (!data.success) {
+            alert(data.errors?.resume_file?.[0] || data.errors?.job_description?.[0] || data.message || 'Analysis failed');
+            return;
+        }
+
+        const resultBox = document.getElementById('resultBox');
+        const resumeContentDiv = document.getElementById('resumeContent');
+
+        resumeContentDiv.innerHTML = data.resume.resume_content;
+        resultBox.style.display = 'block';
+    })
+    .catch(err => {
+        console.error(err);
+        alert('Server error');
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+        buttonText.textContent = 'Analyze Resume';
+        loadingSpinner.style.display = 'none';
     });
 });
+
+});
+
 </script>
 
 

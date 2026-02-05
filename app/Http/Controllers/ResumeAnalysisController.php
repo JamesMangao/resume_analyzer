@@ -9,57 +9,97 @@ use Smalot\PdfParser\Parser as PdfParser;
 
 class ResumeAnalysisController extends Controller
 {
+    // 🔹 OPTIONAL: old non-AJAX version (can delete if unused)
     public function store(Request $request)
     {
-        // 1️⃣ Validate input (file types only)
-        $request->validate([
-            'resume_file' => 'required|mimes:pdf,doc,docx,txt|max:5120', // 5MB limit
-            'job_description' => 'required|string',
-        ]);
+        // if you are using AJAX, this method is NOT used
+        return redirect()->back();
+    }
 
-        $file = $request->file('resume_file');
-        $extension = strtolower($file->getClientOriginalExtension());
-        $resumeContent = '';
+    // 🔹 AJAX VERSION (THIS IS THE IMPORTANT ONE)
+  public function storeAjax(Request $request)
+{
+    // Validate AJAX request
+    $validator = \Validator::make($request->all(), [
+        'resume_file' => 'required|mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain|max:5120',
+        'job_description' => 'required|string',
+    ]);
 
-        // 2️⃣ Extract content based on file type
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    $file = $request->file('resume_file');
+    $extension = strtolower($file->getClientOriginalExtension());
+    $resumeContent = '';
+
+    // Move file to temporary path with proper extension
+    $tempPath = sys_get_temp_dir() . '/' . uniqid() . '.' . $extension;
+    $file->move(dirname($tempPath), basename($tempPath));
+
+    try {
         switch ($extension) {
             case 'txt':
-                // Wrap plain text in <pre> to preserve formatting
-                $resumeContent = '<pre>' . htmlspecialchars(file_get_contents($file->getPathname())) . '</pre>';
+                $resumeContent = '<pre>' . htmlspecialchars(file_get_contents($tempPath)) . '</pre>';
                 break;
 
             case 'doc':
             case 'docx':
-                // Convert DOCX to HTML
-                $phpWord = IOFactory::load($file->getPathname());
+                $phpWord = IOFactory::load($tempPath);
                 $writer = IOFactory::createWriter($phpWord, 'HTML');
                 ob_start();
-                $writer->save("php://output");
+                $writer->save('php://output');
                 $resumeContent = ob_get_clean();
                 break;
 
             case 'pdf':
-                // Convert PDF to text
                 $parser = new PdfParser();
-                $pdf = $parser->parseFile($file->getPathname());
-                $text = $pdf->getText();
-                $resumeContent = '<pre>' . htmlspecialchars($text) . '</pre>';
+                $pdf = $parser->parseFile($tempPath);
+                $resumeContent = '<pre>' . htmlspecialchars($pdf->getText()) . '</pre>';
                 break;
 
             default:
-                return back()->with('error', 'Unsupported file type.');
+                throw new \Exception('Unsupported file type.');
         }
+    } catch (\Exception $e) {
+        // Cleanup temp file
+        @unlink($tempPath);
 
-        // 3️⃣ Call MySQL Stored Procedure with content instead of path
-        $success = DB::statement('CALL insert_resume_analysis_to_db(1,?, ?)', [
-            $resumeContent,
-            $request->job_description
-        ]);
-
-        if ($success) {
-            return back()->with('success', 'Resume analyzed and stored successfully!');
-        }
-
-        return back()->with('error', 'Failed to insert resume.');
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to read resume: ' . $e->getMessage()
+        ], 500);
     }
+
+    // Delete temp file after reading
+    @unlink($tempPath);
+
+    // Insert into database
+    $insertResult = DB::select('CALL usp_insert_resume(?, ?, ?)', [
+        1,
+        $resumeContent,
+        $request->job_description
+    ]);
+
+    $newId = $insertResult[0]->inserted_id;
+    // Fetch result
+    $result = DB::select('CALL usp_get_resume(?, ?)', [1, $newId]); // adjust params if needed
+
+    if (!$result) {
+        return response()->json([
+            'success' => false, 
+            'message' => 'No resume found'
+        ], 500);
+    }
+
+    return response()->json([
+        'success' => true,
+        'resume' => $result[0]
+    ]);
 }
+
+}
+
