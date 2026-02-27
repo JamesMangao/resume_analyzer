@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use League\CommonMark\CommonMarkConverter;
 use PhpOffice\PhpWord\IOFactory;
+use App\Services\ResumeDocxService;
 use Smalot\PdfParser\Parser as PdfParser;
 
 class ResumeAnalysisController extends Controller
@@ -20,6 +21,7 @@ class ResumeAnalysisController extends Controller
     // 🔹 AJAX VERSION (THIS IS THE IMPORTANT ONE)
  public function storeAjax(Request $request)
 {
+     try {
     // 1️⃣ Validate AJAX request
     $validator = \Validator::make($request->all(), [
         'resume_file' => 'required|mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain|max:5120',
@@ -116,7 +118,9 @@ class ResumeAnalysisController extends Controller
 
     // 4️⃣ Hugging Face AI Suggestions
     // 4️⃣ Hugging Face AI Suggestions
-    $suggestions = 'No suggestions available.';
+    $suggestionsHtml = '<p>No suggestions available.</p>';
+    $markdown = '';
+
     try {
         $client = new \GuzzleHttp\Client();
         $apiKey = env('HUGGINGFACE_API_KEY');
@@ -127,43 +131,90 @@ class ResumeAnalysisController extends Controller
                 'Content-Type' => 'application/json',
             ],
             'json' => [
-                "model" => "Qwen/Qwen3-Coder-Next:novita",
+                "model" => "zai-org/GLM-5:fastest",
                 "messages" => [
                     [
                         "role" => "user",
-                        "content" => "Suggest improvements to make the following resume more professional and aligned with this job description.\n\nResume:\n$resumeText\n\nJob Description:\n$jobDescription"
+                        "content" => "Suggest improvements..."
                     ]
                 ],
-                "stream" => false
             ]
         ]);
 
         $body = json_decode($response->getBody()->getContents(), true);
-        if (isset($body['choices'][0]['message']['content'])) {
+
+        if (!empty($body['choices'][0]['message']['content'])) {
             $markdown = $body['choices'][0]['message']['content'];
 
             $converter = new CommonMarkConverter([
-                'html_input' => 'strip',          // security
+                'html_input' => 'strip',
                 'allow_unsafe_links' => false,
             ]);
 
-            $suggestions = $converter->convert($markdown)->getContent();
+            $suggestionsHtml = $converter->convert($markdown)->getContent();
         }
 
-            } catch (\Exception $e) {
-                \Log::error('HF AI Error: ' . $e->getMessage());
-            }
-
+    } catch (\Exception $e) {
+        \Log::error('HF AI Error: ' . $e->getMessage());
+    }
 
     // 5️⃣ Return JSON with resume + AI suggestions
     return response()->json([
-        'success' => true,
-        'resume' => [
-            'resume_content' => $resumeContent,
-            'suggestions' => $suggestions
-        ]
-    ]);
+            'success' => true,
+            'resume' => [
+                'resume_content' => $resumeContent,
+                'suggestions_html' => $suggestionsHtml,
+                'suggestions_markdown' => $markdown
+            ]
+        ]);
+
+    } catch (\Throwable $e) {
+
+        \Log::error('Resume AJAX Error', [
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
+    }
 }
+public function downloadDocx(Request $request)
+{
+    $markdown = $request->input('resume_markdown');
+
+    if (!$markdown) {
+        return response()->json(['message' => 'No resume content provided'], 422);
+    }
+
+    $phpWord = ResumeDocxService::generate($markdown);
+
+    $fileName = 'AI_Optimized_Resume.docx';
+    $path = storage_path("app/$fileName");
+
+    IOFactory::createWriter($phpWord, 'Word2007')->save($path);
+
+    return response()->download($path)->deleteFileAfterSend();
+}
+// public function downloadDocx(Request $request)
+// {
+//     $markdown = $request->input('resume_markdown');
+
+//     $phpWord = ResumeDocxService::generate($markdown);
+
+//     $fileName = 'Resume.docx';
+//     header('Content-Type: application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+//     header("Content-Disposition: attachment; filename=\"$fileName\"");
+//     header('Cache-Control: max-age=0');
+
+//     $writer = IOFactory::createWriter($phpWord, 'Word2007');
+//     $writer->save('php://output');
+//     exit;
+// }
+
 
 }
 

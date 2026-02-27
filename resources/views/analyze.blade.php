@@ -98,8 +98,8 @@
 
                             <form id="analysisForm" enctype="multipart/form-data">
                                 @csrf
-
-                                <!-- Resume Upload -->
+                                <input type="hidden" id="resumeMarkdown">
+                                <!-- Resume Upload -->      
                                 <div class="mb-4">
                                     <label for="resumeFile" class="form-label fs-5">
                                         Upload Your Resume
@@ -148,9 +148,14 @@
 
             </div>
             <!-- END GRID -->
-    <div id="resumeSuggestions" class="card mt-3 p-3 text-muted" style="display:none;"></div>
-
+        <div id="resumeSuggestions" class="card mt-3 p-3 text-muted" style="display:none;">
+            <button id="downloadDocx" 
+                    class="btn btn-success mt-3"
+                    data-url="{{ route('resume.download.docx') }}">
+                Download Resume (DOCX)
+            </button>
         </div>
+
     </div>
 </div>
 
@@ -258,10 +263,25 @@ form.addEventListener('submit', function(e) {
                     document.getElementById('resumeContentWrapper').appendChild(suggestionDiv);
                 }
 
-                if(data.resume.suggestions) {
+               if (data.resume.suggestions_html) {
                     suggestionDiv.style.display = 'block';
-                    suggestionDiv.innerHTML = "<strong>Burat:</strong><br>" + data.resume.suggestions;
-                } else {
+
+                    // Inject download button with data-url
+                    suggestionDiv.innerHTML = `
+                        <strong>Resume Suggestions:</strong><br>
+                        ${data.resume.suggestions_html}
+                        <div class="text-end mt-3">
+                            <button id="downloadDocx" 
+                                    class="btn btn-success"
+                                    data-url="{{ route('resume.download.docx') }}">
+                                Download Resume (DOCX)
+                            </button>
+                        </div>
+                    `;
+
+                    // Save markdown in hidden input
+                    document.getElementById('resumeMarkdown').value = data.resume.suggestions_markdown;
+                }else {
                     suggestionDiv.style.display = 'none';
                 }
             })
@@ -281,10 +301,72 @@ form.addEventListener('submit', function(e) {
             buttonText.textContent = 'Analyze Resume';
             loadingSpinner.style.display = 'none';
         });
-});
+        // Delegate clicks on the whole document
+        document.addEventListener('click', function(e) {
+            // Only run if the clicked element is the download button
+            if (e.target && e.target.id === 'downloadDocx') {
+                const button = e.target;
+                const url = button.dataset.url; // <-- now defined
+                const markdown = document.getElementById('resumeMarkdown').value;
 
+                if (!markdown) {
+                    alert('No resume content to download.');
+                    return;
+                }
 
+                // Create a hidden form to POST the markdown
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = url;
+                form.style.display = 'none';
+
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = document.querySelector('meta[name="csrf-token"]').content;
+
+                const content = document.createElement('input');
+                content.type = 'hidden';
+                content.name = 'resume_markdown';
+                content.value = markdown;
+
+                form.appendChild(csrf);
+                form.appendChild(content);
+                document.body.appendChild(form);
+
+                form.submit();
+                document.body.removeChild(form);
+            }
+        });
+
+    });
+
+    
 });
+function downloadResume(resumeMarkdown) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = '/resume/download-docx';
+
+    // Add CSRF token
+    const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = '_token';
+    csrfInput.value = token;
+    form.appendChild(csrfInput);
+
+    // Add markdown content
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'resume_markdown';
+    input.value = resumeMarkdown;
+    form.appendChild(input);
+
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+}
 </script>
 </body>
 </html>
