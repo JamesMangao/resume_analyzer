@@ -182,6 +182,282 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 .feed-composer:focus-within{border-color:rgba(79,142,247,.35);box-shadow:0 0 0 3px rgba(79,142,247,.06)}
 .composer-top{display:flex;gap:12px;align-items:flex-start}
 .composer-avatar{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--accent);object-fit:cover;flex-shrink:0}
+
+/* ── AI RESUME ANALYZER ──────────────────────────────────────── */
+.analyzer-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.form-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.file-upload-btn {
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    justify-content: center;
+}
+
+.resume-preview-wrapper {
+    position: relative;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.resume-loader {
+    position: absolute;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: 10px;
+}
+
+.resume-loader .spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+}
+
+#resumeContent {
+    padding: 20px;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.suggestions-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.btn .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.mt-2 {
+    margin-top: 8px;
+}
+
+@media (max-width: 1024px) {
+    .analyzer-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+
+/* ── AI RESUME ANALYZER ──────────────────────────────────────── */
+.analyzer-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.form-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.file-upload-btn {
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    justify-content: center;
+}
+
+.resume-preview-wrapper {
+    position: relative;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.resume-loader {
+    position: absolute;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: 10px;
+}
+
+.resume-loader .spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+}
+
+#resumeContent {
+    padding: 20px;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.suggestions-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.btn .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.mt-2 {
+    margin-top: 8px;
+}
+
+@media (max-width: 1024px) {
+    .analyzer-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+
+/* ── AI RESUME ANALYZER ──────────────────────────────────────── */
+.analyzer-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 24px;
+}
+
+.form-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.file-upload-btn {
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    justify-content: center;
+}
+
+.resume-preview-wrapper {
+    position: relative;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.resume-loader {
+    position: absolute;
+    inset: 0;
+    background: rgba(17, 24, 39, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: 10px;
+}
+
+.resume-loader .spinner {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+}
+
+#resumeContent {
+    padding: 20px;
+    overflow-y: auto;
+    height: 100%;
+}
+
+.suggestions-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.btn .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.mt-2 {
+    margin-top: 8px;
+}
+
+@media (max-width: 1024px) {
+    .analyzer-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 .composer-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:'Newsreader',serif;font-size:.95rem;font-weight:300;line-height:1.6;resize:none;min-height:60px}
 .composer-input::placeholder{color:var(--muted)}
 .composer-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}

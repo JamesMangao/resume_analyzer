@@ -710,20 +710,20 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;bac
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut as fbSignOut }
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut as fbSignOut, signInWithRedirect, getRedirectResult }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateDoc, deleteDoc,
          query, orderBy, limit, where, arrayUnion, arrayRemove, increment, serverTimestamp, onSnapshot, Timestamp }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCXl_R3gnGX_rxfjy6rNi_JdJNgdbNVTg0",
-  authDomain: "resume-analyzer-2d4f2.firebaseapp.com",
-  projectId: "resume-analyzer-2d4f2",
-  storageBucket: "resume-analyzer-2d4f2.firebasestorage.app",
-  messagingSenderId: "1029896274597",
-  appId: "1:1029896274597:web:b73c1d51c445364f67434c",
-  measurementId: "G-XZKS65TXKG"
+  apiKey: "AIzaSyBtFg4Sz4b1ju9CZNOqwbM7KTLIZNk7Ask",
+  authDomain: "lifevault-77666.firebaseapp.com",
+  projectId: "lifevault-77666",
+  storageBucket: "lifevault-77666.firebasestorage.app",
+  messagingSenderId: "295717552080",
+  appId: "1:295717552080:web:1783772c220100f14943d5",
+  measurementId: "G-RLKQDJXTMB"
 };
 const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
@@ -795,15 +795,22 @@ window.closeSidebar = () => {
 window.addEventListener('load', () => {
   setTimeout(() => {
     document.getElementById('loading').classList.add('hidden');
+
+    // Handle the redirect result when the user comes back from Google
+    getRedirectResult(auth).catch(e => {
+      console.error("Redirect Error:", e);
+      toast(e.message || 'Login failed', '❌');
+    });
+
     onAuthStateChanged(auth, user => {
       if (user) { currentUser = user; showApp(user); loadAll(); }
       else showAuth();
     });
     // Fallback if auth never fires
     setTimeout(() => {
-      const auth = document.getElementById('auth-screen');
+      const authScreen = document.getElementById('auth-screen');
       const app  = document.getElementById('app');
-      if (auth.style.display === 'none' && app.style.display === 'none') showAuth();
+      if (authScreen.style.display === 'none' && app.style.display === 'none') showAuth();
     }, 6000);
   }, 1200);
 });
@@ -825,9 +832,9 @@ function showApp(user) {
 }
 
 /* ══ AUTH ════════════════════════════════════════════════════ */
-document.getElementById('google-login-btn').onclick = async () => {
-  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
-  catch(e) { toast(e.message || 'Login failed', '❌'); }
+document.getElementById('google-login-btn').onclick = () => {
+  const provider = new GoogleAuthProvider();
+  signInWithRedirect(auth, provider);
 };
 window.signOut = async () => {
   if (!confirm('Sign out?')) return;

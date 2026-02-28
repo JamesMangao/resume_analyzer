@@ -7,13 +7,13 @@ import { getFirestore, collection, addDoc, getDocs, getDoc, doc, setDoc, updateD
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCXl_R3gnGX_rxfjy6rNi_JdJNgdbNVTg0",
-  authDomain: "resume-analyzer-2d4f2.firebaseapp.com",
-  projectId: "resume-analyzer-2d4f2",
-  storageBucket: "resume-analyzer-2d4f2.firebasestorage.app",
-  messagingSenderId: "1029896274597",
-  appId: "1:1029896274597:web:b73c1d51c445364f67434c",
-  measurementId: "G-XZKS65TXKG"
+  apiKey: "AIzaSyBtFg4Sz4b1ju9CZNOqwbM7KTLIZNk7Ask",
+  authDomain: "lifevault-77666.firebaseapp.com",
+  projectId: "lifevault-77666",
+  storageBucket: "lifevault-77666.firebasestorage.app",
+  messagingSenderId: "295717552080",
+  appId: "1:295717552080:web:1783772c220100f14943d5",
+  measurementId: "G-RLKQDJXTMB"
 };
 const fbApp = initializeApp(firebaseConfig);
 const auth  = getAuth(fbApp);
@@ -112,6 +112,7 @@ function showApp(user) {
   document.getElementById('composer-avatar').src = av;
   updateGreeting();
   loadUserProfile();
+  restoreLastPage(); // Restore last page on app load
 }
 
 /* ══ AUTH ════════════════════════════════════════════════════ */
@@ -156,11 +157,18 @@ window.navigateTo = (page, event) => {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-'+page).classList.add('active');
   document.querySelector(`.nav-item[data-page="${page}"]`).classList.add('active');
+  localStorage.setItem('lifeVaultLastPage', page); // Save current page
   closeSidebar();
   if (page === 'insights')   renderInsights();
   if (page === 'community')  { subscribeFeed(); document.getElementById('new-posts-dot').style.display='none'; }
   if (page === 'profile')    renderProfilePage();
 };
+
+function restoreLastPage() {
+    const lastPage = localStorage.getItem('lifeVaultLastPage') || 'dashboard';
+    navigateTo(lastPage);
+}
+
 
 /* ══════════════════════════════════════════════════════════════
    JOURNAL EXPAND  —  FIX: use dataset + delegated listeners

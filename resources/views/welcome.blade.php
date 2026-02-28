@@ -1,4 +1,4 @@
-<!DOCTYPE html>
++56+0<0.!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -43,7 +43,7 @@
             @include('goals')
             @include('insights')
             @include('community')
-            @include('leaderboard')
+            @include('analyzer')
             @include('settings')
         </div>
     </div>
@@ -52,7 +52,7 @@
     @include('layouts.partials._toast')
     @include('layouts.partials._journal-expand')
 
-    <script src="{{ asset('js/app.js') }}" type="module"></script>
+    <script src="{{ asset('js/app.js') }}?v={{ time() }}" type="module"></script>
 
 </body>
 </html>

@@ -23,7 +23,7 @@
         <span class="nav-icon">🧑‍🤝‍🧑</span> Community
         <div id="new-posts-dot"></div>
     </div>
-    <div class="nav-item" data-page="leaderboard" onclick="navigateTo('leaderboard', event)"><span class="nav-icon">🏆</span> Leaderboard</div>
+    <div class="nav-item" data-page="analyzer" onclick="navigateTo('analyzer', event)"><span class="nav-icon">🔎</span>Resume Analyzer</div>
 
     <div class="nav-section-label">System</div>
     <div class="nav-item" data-page="settings" onclick="navigateTo('settings', event)"><span class="nav-icon">⚙️</span> Settings</div>
