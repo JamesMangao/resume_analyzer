@@ -201,7 +201,7 @@
               <div class="ra-report-dot"></div>
               AI Analysis Report
             </div>
-            <div class="ra-report-badge">cerebras · llama3.1-8b</div>
+            <div class="ra-report-badge">groq · llama-3.3-70b</div>
           </div>
           <div id="ra-sections" class="ra-sections-list"></div>
         </div>

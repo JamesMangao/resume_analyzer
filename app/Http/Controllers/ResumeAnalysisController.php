@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
@@ -190,52 +191,52 @@ Bullet list of 3-5 formatting and keyword tips to improve ATS pass rate.
 Numbered list of the top 5 highest-impact changes to make right now.
 PROMPT;
 
-            // 6️⃣ Call Cerebras API
+            // 6️⃣ Call Groq API (llama-3.3-70b-versatile)
             $suggestionsHtml = '<p>No suggestions available.</p>';
             $markdown        = '';
             $matchScore      = null;
 
             try {
-                $client = new \GuzzleHttp\Client();
-                $apiKey = env('CEREBRAS_API_KEY');
+                $apiKey = config('services.groq.key');
 
                 if (empty($apiKey)) {
-                    throw new \Exception('CEREBRAS_API_KEY is not set in .env');
+                    throw new \Exception('GROQ_API_KEY is not set in .env');
                 }
 
-                // @var \Illuminate\Http\Client\Response $response
-                $response = $client->post('https://api.cerebras.ai/v1/chat/completions', [
-                    'headers' => [
-                        'Authorization' => 'Bearer ' . $apiKey,
-                        'Content-Type'  => 'application/json',
-                    ],
-                    // FIX 1: temperature set to 0 for deterministic, consistent output
-                    'json' => [
-                        'model'       => 'llama3.1-8b',
-                        'max_tokens'  => 2048,
-                        'temperature' => 0,
-                        'messages'    => [
-                            [
-                                'role'    => 'system',
-                                'content' => 'You are an expert resume coach and ATS specialist. Always respond in well-structured Markdown. Always start the ## Match Score section with **Score: XX/100** on the very first line, where XX is an integer.',
-                            ],
-                            [
-                                'role'    => 'user',
-                                'content' => $prompt,
-                            ],
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . $apiKey,
+                    'Content-Type'  => 'application/json',
+                ])->timeout(60)->post('https://api.groq.com/openai/v1/chat/completions', [
+                    'model'       => 'llama-3.3-70b-versatile',
+                    'max_tokens'  => 2048,
+                    'temperature' => 0,
+                    'messages'    => [
+                        [
+                            'role'    => 'system',
+                            'content' => 'You are an expert resume coach and ATS specialist. Always respond in well-structured Markdown. Always start the ## Match Score section with **Score: XX/100** on the very first line, where XX is an integer.',
+                        ],
+                        [
+                            'role'    => 'user',
+                            'content' => $prompt,
                         ],
                     ],
-                    'timeout' => 60,
                 ]);
 
-                $body = json_decode($response->getBody()->getContents(), true);
+                if ($response->failed()) {
+                    $status = $response->status();
+                    $errorBody = $response->body();
+                    Log::error('Groq API error', ['status' => $status, 'body' => $errorBody]);
+                    throw new \Exception("Groq API error ({$status}): {$errorBody}");
+                }
 
-                Log::info('Cerebras raw response: ' . json_encode($body));
+                $body = $response->json();
+
+                Log::info('Groq raw response: ' . json_encode($body));
 
                 if (!empty($body['choices'][0]['message']['content'])) {
                     $markdown = $body['choices'][0]['message']['content'];
 
-                    Log::info('Cerebras markdown (first 500): ' . mb_substr($markdown, 0, 500));
+                    Log::info('Groq markdown (first 500): ' . mb_substr($markdown, 0, 500));
 
                     // Extract match score — multiple patterns for robustness
                     $scorePatterns = [
@@ -267,18 +268,12 @@ PROMPT;
                     $suggestionsHtml = $converter->convert($markdown)->getContent();
                 }
 
-            } catch (\GuzzleHttp\Exception\ClientException $e) {
-                $errorBody = $e->getResponse()->getBody()->getContents();
-                Log::error('Cerebras API ClientException: ' . $errorBody);
-                $suggestionsHtml = '<p>AI Error (4xx): ' . htmlspecialchars($errorBody) . '</p>';
-                $markdown        = '## Error' . "\n" . $errorBody;
-            } catch (\GuzzleHttp\Exception\ServerException $e) {
-                $errorBody = $e->getResponse()->getBody()->getContents();
-                Log::error('Cerebras API ServerException: ' . $errorBody);
-                $suggestionsHtml = '<p>AI Error (5xx): ' . htmlspecialchars($errorBody) . '</p>';
-                $markdown        = '## Error' . "\n" . $errorBody;
+            } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                Log::error('Groq API connection error: ' . $e->getMessage());
+                $suggestionsHtml = '<p>Could not reach Groq. Please check your connection and try again.</p>';
+                $markdown        = '## Error' . "\n" . $e->getMessage();
             } catch (\Exception $e) {
-                Log::error('Cerebras API General Error: ' . $e->getMessage());
+                Log::error('Groq API General Error: ' . $e->getMessage());
                 $suggestionsHtml = '<p>AI Error: ' . htmlspecialchars($e->getMessage()) . '</p>';
                 $markdown        = '## Error' . "\n" . $e->getMessage();
             }
